@@ -22,6 +22,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
+import app.marlboroadvance.mpvex.database.MpvExDatabase
+import app.marlboroadvance.mpvex.domain.media.model.VideoMark
+import app.marlboroadvance.mpvex.ui.browser.dialogs.videoMarkLabel
+import app.marlboroadvance.mpvex.utils.media.MediaIdentifier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -90,6 +95,26 @@ fun VideoCard(
   // Use override parameters if provided, otherwise use preferences
   val showSizeChip = overrideShowSizeChip ?: showSizeChipPref
   val showResolutionChip = overrideShowResolutionChip ?: showResolutionChipPref
+
+  val database = koinInject<MpvExDatabase>()
+  val playbackFlow = remember(video.path, database) {
+    database.videoDataDao().observeVideoData(MediaIdentifier.forLocalPath(video.path))
+  }
+  val playbackState by playbackFlow.collectAsState(initial = null)
+  val manualMark = VideoMark.fromStored(playbackState?.manualMark)
+  val displayRecentlyPlayed = when (manualMark) {
+    VideoMark.LAST_PLAYED -> true
+    null -> isRecentlyPlayed
+    else -> false
+  }
+  val displayWatched = when (manualMark) {
+    VideoMark.FINISHED -> true
+    null -> isWatched || playbackState?.hasBeenWatched == true
+    else -> false
+  }
+  val displayProgress = if (manualMark != null && manualMark != VideoMark.LAST_PLAYED) null else progressPercentage
+  val showMark = manualMark != null && manualMark != VideoMark.NONE
+  val showAutomaticNew = manualMark == null && showUnplayedOldVideoLabel && isOldAndUnplayed
 
   Card(
     modifier = modifier
@@ -194,25 +219,23 @@ fun VideoCard(
             )
           }
 
-          // Show "NEW" label for recently added unplayed videos if enabled (top-left corner).
-          // The age + unplayed check is already resolved by the ViewModel (isOldAndUnplayed),
-          // so we only need to check the preference toggle here.
-          if (showUnplayedOldVideoLabel && isOldAndUnplayed) {
+          // Explicit marks stay visible regardless of the automatic NEW-label preference.
+          if (showMark || showAutomaticNew) {
             Box(
               modifier =
                 Modifier
                   .align(Alignment.TopStart)
                   .padding(6.dp)
                   .clip(RoundedCornerShape(4.dp))
-                  .background(Color(0xFFD32F2F)) // Warning red color
+                  .background(if (showMark) MaterialTheme.colorScheme.primaryContainer else Color(0xFFD32F2F))
                   .padding(horizontal = 8.dp, vertical = 3.dp),
             ) {
               Text(
-                text = stringResource(R.string.video_label_new),
+                text = if (showMark) videoMarkLabel(manualMark!!) else stringResource(R.string.video_label_new),
                 style = MaterialTheme.typography.labelSmall.copy(
                   fontWeight = FontWeight.Bold,
                 ),
-                color = Color.White,
+                color = if (showMark) MaterialTheme.colorScheme.onPrimaryContainer else Color.White,
               )
             }
           }
@@ -235,7 +258,7 @@ fun VideoCard(
           }
 
           // Progress bar
-          if (progressPercentage != null && showProgressBar) {
+          if (displayProgress != null && showProgressBar) {
             Box(
               modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -246,7 +269,7 @@ fun VideoCard(
               Box(
                 modifier = Modifier
                   .fillMaxHeight()
-                  . fillMaxWidth(progressPercentage)
+                  . fillMaxWidth(displayProgress)
                   .background(MaterialTheme.colorScheme.primary),
               )
             }
@@ -263,11 +286,11 @@ fun VideoCard(
           } else {
             if (gridColumns == 1) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleSmall
           }.let { baseStyle ->
-            if (isRecentlyPlayed) baseStyle.copy(fontStyle = FontStyle.Italic) else baseStyle
+            if (displayRecentlyPlayed) baseStyle.copy(fontStyle = FontStyle.Italic) else baseStyle
           },
-          color = if (isRecentlyPlayed) {
+          color = if (displayRecentlyPlayed) {
             MaterialTheme.colorScheme.tertiary 
-          } else if (isWatched) {
+          } else if (displayWatched) {
             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
           } else {
             MaterialTheme.colorScheme.onSurface
@@ -466,25 +489,23 @@ fun VideoCard(
             )
           }
 
-          // Show "NEW" label for recently added unplayed videos if enabled (top-left corner).
-          // The age + unplayed check is already resolved by the ViewModel (isOldAndUnplayed),
-          // so we only need to check the preference toggle here.
-          if (showUnplayedOldVideoLabel && isOldAndUnplayed) {
+          // Explicit marks stay visible regardless of the automatic NEW-label preference.
+          if (showMark || showAutomaticNew) {
             Box(
               modifier =
                 Modifier
                   .align(Alignment.TopStart)
                   .padding(6.dp)
                   .clip(RoundedCornerShape(4.dp))
-                  .background(Color(0xFFD32F2F)) // Warning red color
+                  .background(if (showMark) MaterialTheme.colorScheme.primaryContainer else Color(0xFFD32F2F))
                   .padding(horizontal = 8.dp, vertical = 3.dp),
             ) {
               Text(
-                text = stringResource(R.string.video_label_new),
+                text = if (showMark) videoMarkLabel(manualMark!!) else stringResource(R.string.video_label_new),
                 style = MaterialTheme.typography.labelSmall.copy(
                   fontWeight = FontWeight.Bold,
                 ),
-                color = Color.White,
+                color = if (showMark) MaterialTheme.colorScheme.onPrimaryContainer else Color.White,
               )
             }
           }
@@ -508,7 +529,7 @@ fun VideoCard(
           }
 
           // Progress bar at bottom of thumbnail
-          if (progressPercentage != null && showProgressBar) {
+          if (displayProgress != null && showProgressBar) {
             Box(
               modifier =
                 Modifier
@@ -528,7 +549,7 @@ fun VideoCard(
                 modifier =
                   Modifier
                     .fillMaxHeight()
-                    .fillMaxWidth(progressPercentage)
+                    .fillMaxWidth(displayProgress)
                     .background(MaterialTheme.colorScheme.primary),
               )
             }
@@ -545,11 +566,11 @@ fun VideoCard(
             } else {
               MaterialTheme.typography.titleSmall
             }.let { baseStyle ->
-              if (isRecentlyPlayed) baseStyle.copy(fontStyle = FontStyle.Italic) else baseStyle
+              if (displayRecentlyPlayed) baseStyle.copy(fontStyle = FontStyle.Italic) else baseStyle
             },
-            color = if (isRecentlyPlayed) {
+            color = if (displayRecentlyPlayed) {
               MaterialTheme.colorScheme.tertiary 
-            } else if (isWatched) {
+            } else if (displayWatched) {
               MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             } else {
               MaterialTheme.colorScheme.onSurface

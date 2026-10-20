@@ -1,5 +1,6 @@
 package app.marlboroadvance.mpvex.ui.browser.videolist
 
+import app.marlboroadvance.mpvex.domain.media.model.isNewVideo
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -329,15 +330,9 @@ class VideoListViewModel(
         // A video qualifies if:
         //   1. It has no playback state (never been played), AND
         //   2. It was added/modified within the configured threshold days.
-        val isUnplayed = playbackState == null
-        val isOldAndUnplayed = if (isUnplayed) {
-          val thresholdDays = appearancePreferences.unplayedOldVideoDays.get()
-          val thresholdMillis = thresholdDays * 24 * 60 * 60 * 1000L
-          val videoAge = System.currentTimeMillis() - (video.dateModified * 1000L)
-          videoAge <= thresholdMillis
-        } else {
-          false
-        }
+        val isOldAndUnplayed = playbackState.isNewVideo(
+          video.dateModified, appearancePreferences.unplayedOldVideoDays.get(), System.currentTimeMillis(),
+        )
 
         val isWatched = if (playbackState != null) {
           if (durationSeconds > 0) {

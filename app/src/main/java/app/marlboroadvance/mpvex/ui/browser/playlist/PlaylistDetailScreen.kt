@@ -66,6 +66,7 @@ import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.presentation.components.pullrefresh.PullRefreshBox
 import app.marlboroadvance.mpvex.ui.browser.cards.M3UVideoCard
 import app.marlboroadvance.mpvex.ui.browser.cards.VideoCard
+import app.marlboroadvance.mpvex.ui.browser.dialogs.rememberMarkAsAction
 import app.marlboroadvance.mpvex.ui.browser.components.BrowserTopBar
 import app.marlboroadvance.mpvex.ui.browser.selection.rememberSelectionManager
 import app.marlboroadvance.mpvex.ui.player.PlayerActivity
@@ -159,6 +160,11 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
         },
         onOperationComplete = { viewModel.refresh() },
       )
+
+    val markAsAction = rememberMarkAsAction(
+      getVideos = { selectionManager.getSelectedItems().map { it.video } },
+      onComplete = { selectionManager.clear(); viewModel.refresh() },
+    )
 
     // UI State
     val listState = rememberLazyListState()
@@ -280,6 +286,7 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
               null
             },
             onPlayClick = null, // Don't show play icon in selection mode for playlist
+            onMarkAsClick = if (playlist?.isM3uPlaylist != true) markAsAction else null,
             onSelectAll = { selectionManager.selectAll() },
             onInvertSelection = { selectionManager.invertSelection() },
             onDeselectAll = { selectionManager.clear() },

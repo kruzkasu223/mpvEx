@@ -86,6 +86,7 @@ import app.marlboroadvance.mpvex.presentation.components.pullrefresh.PullRefresh
 import app.marlboroadvance.mpvex.BuildConfig
 import app.marlboroadvance.mpvex.ui.browser.cards.VideoCard
 import app.marlboroadvance.mpvex.ui.browser.components.BrowserBottomBar
+import app.marlboroadvance.mpvex.ui.browser.dialogs.rememberMarkAsAction
 import app.marlboroadvance.mpvex.ui.browser.components.BrowserTopBar
 import app.marlboroadvance.mpvex.ui.browser.dialogs.AddToPlaylistDialog
 import app.marlboroadvance.mpvex.ui.browser.dialogs.DeleteConfirmationDialog
@@ -182,6 +183,11 @@ data class VideoListScreen(
     // UI State
     val isRefreshing = remember { mutableStateOf(false) }
     val sortDialogOpen = rememberSaveable { mutableStateOf(false) }
+    val markAsAction = rememberMarkAsAction(
+      getVideos = { selectionManager.getSelectedItems() },
+      onComplete = { selectionManager.clear(); viewModel.refreshPlaybackInfo() },
+    )
+
     val deleteDialogOpen = rememberSaveable { mutableStateOf(false) }
     val renameDialogOpen = rememberSaveable { mutableStateOf(false) }
     val addToPlaylistDialogOpen = rememberSaveable { mutableStateOf(false) }
@@ -303,6 +309,7 @@ data class VideoListScreen(
           },
           onShareClick = { selectionManager.shareSelected() },
           onPlayClick = { selectionManager.playSelected() },
+          onMarkAsClick = markAsAction,
           onSelectAll = { selectionManager.selectAll() },
           onInvertSelection = { selectionManager.invertSelection() },
           onDeselectAll = { selectionManager.clear() },

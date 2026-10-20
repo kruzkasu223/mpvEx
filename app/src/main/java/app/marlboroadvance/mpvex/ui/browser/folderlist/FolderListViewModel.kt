@@ -1,5 +1,6 @@
 package app.marlboroadvance.mpvex.ui.browser.folderlist
 
+import app.marlboroadvance.mpvex.domain.media.model.isNewVideo
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -225,7 +226,6 @@ class FolderListViewModel(
         }
 
         val thresholdDays = appearancePreferences.unplayedOldVideoDays.get()
-        val thresholdMillis = thresholdDays * 24 * 60 * 60 * 1000L
         val currentTime = System.currentTimeMillis()
 
         val foldersWithCounts = folders.map { folder ->
@@ -236,16 +236,8 @@ class FolderListViewModel(
 
             // Count new unplayed videos
             val newCount = videos.count { video ->
-              // Check if video was modified within threshold days
-              val videoAge = currentTime - (video.dateModified * 1000)
-              val isRecent = videoAge <= thresholdMillis
-
-              // Check if video has been played
-              // A video is considered "played" if it has any playback state
               val playbackState = playbackStateRepository.getVideoDataByTitle(MediaIdentifier.forLocalPath(video.path))
-              val isUnplayed = playbackState == null
-
-              isRecent && isUnplayed
+              playbackState.isNewVideo(video.dateModified, thresholdDays, currentTime)
             }
 
             FolderWithNewCount(folder, newCount)

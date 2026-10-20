@@ -97,6 +97,7 @@ import app.marlboroadvance.mpvex.presentation.components.pullrefresh.PullRefresh
 import app.marlboroadvance.mpvex.ui.browser.LocalNavigationBarHeight
 import app.marlboroadvance.mpvex.ui.browser.cards.FolderCard
 import app.marlboroadvance.mpvex.ui.browser.cards.VideoCard
+import app.marlboroadvance.mpvex.ui.browser.dialogs.rememberMarkAsAction
 import app.marlboroadvance.mpvex.ui.browser.components.BrowserTopBar
 import app.marlboroadvance.mpvex.ui.browser.dialogs.DeleteConfirmationDialog
 import app.marlboroadvance.mpvex.ui.browser.dialogs.GridColumnSelector
@@ -251,6 +252,14 @@ object FolderListScreen : Screen {
         Pair(videos.size, 0)
       },
       onOperationComplete = { viewModel.refresh() },
+    )
+
+    val markAsAction = rememberMarkAsAction(
+      getVideos = {
+        val paths = selectionManager.getSelectedItems().map { it.path }
+        app.marlboroadvance.mpvex.utils.media.collectVideosForMarking(context, paths)
+      },
+      onComplete = { selectionManager.clear(); viewModel.recalculateNewVideoCounts() },
     )
 
     // Permissions
@@ -429,7 +438,8 @@ object FolderListScreen : Screen {
                 ).show()
               }
             },
-            onSelectAll = { selectionManager.selectAll() },
+            onMarkAsClick = markAsAction,
+          onSelectAll = { selectionManager.selectAll() },
             onInvertSelection = { selectionManager.invertSelection() },
             onDeselectAll = { selectionManager.clear() },
           )

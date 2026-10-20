@@ -16,6 +16,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RemoveCircle
@@ -94,6 +97,7 @@ fun BrowserTopBar(
   onTitleLongPress: (() -> Unit)? = null,
   useRemoveIcon: Boolean = false,
   onAddToPlaylistClick: (() -> Unit)? = null,
+  onMarkAsClick: (() -> Unit)? = null,
 ) {
   if (isInSelectionMode) {
     SelectionTopBar(
@@ -113,6 +117,7 @@ fun BrowserTopBar(
       modifier = modifier,
       useRemoveIcon = useRemoveIcon,
       onAddToPlaylist = onAddToPlaylistClick,
+      onMarkAs = onMarkAsClick,
     )
   } else {
     NormalTopBar(
@@ -314,8 +319,10 @@ private fun SelectionTopBar(
   modifier: Modifier = Modifier,
   useRemoveIcon: Boolean = false,
   onAddToPlaylist: (() -> Unit)? = null,
+  onMarkAs: (() -> Unit)? = null,
 ) {
   var showDropdown by remember { mutableStateOf(false) }
+  var showActions by remember { mutableStateOf(false) }
 
   TopAppBar(
     colors = TopAppBarDefaults.topAppBarColors(
@@ -423,7 +430,7 @@ private fun SelectionTopBar(
       }
 
       // Rename icon
-      if (onRename != null) {
+      if (onRename != null && onMarkAs == null) {
         IconButton(
           onClick = onRename,
           enabled = isSingleSelection,
@@ -465,7 +472,7 @@ private fun SelectionTopBar(
       }
 
       // Share icon
-      if (onShare != null) {
+      if (onShare != null && onMarkAs == null) {
         IconButton(
           onClick = onShare,
           modifier = Modifier.padding(horizontal = 2.dp),
@@ -480,7 +487,7 @@ private fun SelectionTopBar(
       }
 
       // Blacklist icon
-      if (onBlacklist != null) {
+      if (onBlacklist != null && onMarkAs == null) {
         IconButton(
           onClick = onBlacklist,
           modifier = Modifier.padding(horizontal = 2.dp),
@@ -494,8 +501,52 @@ private fun SelectionTopBar(
         }
       }
 
+      if (onMarkAs != null) {
+        Box {
+          IconButton(onClick = { showActions = true }) {
+            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.mark_more_actions))
+          }
+          DropdownMenu(expanded = showActions, onDismissRequest = { showActions = false }) {
+            if (onRename != null) {
+              DropdownMenuItem(
+                text = { Text(stringResource(R.string.rename)) },
+                leadingIcon = { Icon(Icons.Filled.DriveFileRenameOutline, contentDescription = null) },
+                enabled = isSingleSelection,
+                onClick = { showActions = false; onRename() },
+              )
+            }
+            if (onShare != null) {
+              DropdownMenuItem(
+                text = { Text(stringResource(R.string.generic_share)) },
+                leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
+                onClick = { showActions = false; onShare() },
+              )
+            }
+            if (onBlacklist != null) {
+              DropdownMenuItem(
+                text = { Text(stringResource(R.string.pref_folders_blacklist)) },
+                leadingIcon = { Icon(Icons.Filled.Block, contentDescription = null) },
+                onClick = { showActions = false; onBlacklist() },
+              )
+            }
+            DropdownMenuItem(
+              text = { Text(stringResource(R.string.mark_as)) },
+              leadingIcon = { Icon(Icons.Filled.Label, contentDescription = null) },
+              onClick = { showActions = false; onMarkAs() },
+            )
+            if (onDelete != null) {
+              DropdownMenuItem(
+                text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
+                leadingIcon = { Icon(if (useRemoveIcon) Icons.Filled.RemoveCircle else Icons.Filled.Delete, contentDescription = null) },
+                onClick = { showActions = false; onDelete() },
+              )
+            }
+          }
+        }
+      }
+
       // Delete/Remove icon
-      if (onDelete != null) {
+      if (onDelete != null && onMarkAs == null) {
         IconButton(
           onClick = onDelete,
           modifier = Modifier.padding(horizontal = 2.dp),

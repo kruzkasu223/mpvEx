@@ -70,6 +70,7 @@ import app.marlboroadvance.mpvex.presentation.components.ConfirmDialog
 import app.marlboroadvance.mpvex.presentation.components.pullrefresh.PullRefreshBox
 import app.marlboroadvance.mpvex.ui.browser.cards.FolderCard
 import app.marlboroadvance.mpvex.ui.browser.cards.VideoCard
+import app.marlboroadvance.mpvex.ui.browser.dialogs.rememberMarkAsAction
 import app.marlboroadvance.mpvex.ui.browser.components.BrowserTopBar
 import app.marlboroadvance.mpvex.ui.browser.playlist.PlaylistDetailScreen
 import app.marlboroadvance.mpvex.ui.browser.selection.rememberSelectionManager
@@ -148,6 +149,13 @@ object RecentlyPlayedScreen : Screen {
         onOperationComplete = { },
       )
 
+    val markAsAction = rememberMarkAsAction(
+      getVideos = {
+        selectionManager.getSelectedItems().filterIsInstance<RecentlyPlayedItem.VideoItem>().map { it.video }
+      },
+      onComplete = { selectionManager.clear() },
+    )
+
     // Handle back button during selection mode or FAB menu expanded
     BackHandler(enabled = selectionManager.isInSelectionMode || isFabExpanded.value) {
       when {
@@ -201,6 +209,7 @@ object RecentlyPlayedScreen : Screen {
             onInfoClick = null, // No info in recently played
             onShareClick = null,
             onPlayClick = null,
+            onMarkAsClick = if (selectionManager.getSelectedItems().all { it is RecentlyPlayedItem.VideoItem }) markAsAction else null,
             onSelectAll = { selectionManager.selectAll() },
             onInvertSelection = { selectionManager.invertSelection() },
             onDeselectAll = { selectionManager.clear() },
